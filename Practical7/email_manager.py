@@ -1,6 +1,8 @@
-import socket 
+import socket
 import base64
 import time
+import mimetypes
+import os
 
 # Using Mailtrap to send and read emails
 USERNAME = "255a042f522676"
@@ -59,7 +61,7 @@ def get_emails():
             mail += mail_chunk
             if mail_chunk[-5:] == b"\r\n.\r\n":
                 break
-        
+
         mail_text = mail.decode()
 
         # Check for BCC warning
@@ -67,7 +69,7 @@ def get_emails():
             print('\033[93m' + "[BCC Warning] " + mail_text + '\033[0m')
         else:
             print(mail_text)
-    
+
     quit_cmd = "QUIT\r\n"
     clientSocket.send(quit_cmd.encode())
     recv_quit = clientSocket.recv(1024)
@@ -82,6 +84,7 @@ def send_email():
     subject = input("Subject: ")
     message = input("Message: ")
     bcc = input("BCC: ")
+    attachment_path = input("Attachment file path: ")
 
     # Email sender details
     sender = MY_EMAIL
@@ -124,10 +127,24 @@ def send_email():
     bcc = f"Bcc: {bcc}\r\n"
     subject_header = f"Subject: {subject}\r\n"
     date = time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime())
-    date_header = "Date: " + date + "\r\n\r\n"
+    date_header = "Date: " + date + "\r\n"
+    
+    # Add MIME headers for attachment
+    attachment_name = os.path.basename(attachment_path)
+    mime_header = f'Content-Type: image/jpeg; name="{attachment_name}"\r\n'
+    mime_header += f'Content-Disposition: attachment; filename="{attachment_name}"\r\n'
+    mime_header += "Content-Transfer-Encoding: base64\r\n\r\n"
+
+    # Read attachment file
+    with open(attachment_path, "rb") as f:
+        attachment_data = f.read()
+
+    # Encode attachment data in base64
+    encoded_attachment = base64.b64encode(attachment_data).decode()
 
     # Construct email
-    email = to + fr + bcc + subject_header + date_header + message + "\r\n.\r\n"
+    email = to + fr + bcc + subject_header + date_header
+    email += mime_header + encoded_attachment + "\r\n.\r\n"
 
     # Send email
     client_socket.send(email.encode())
