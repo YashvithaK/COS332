@@ -1,7 +1,6 @@
 import socket
 import base64
 import time
-import mimetypes
 import os
 
 # Using Mailtrap to send and read emails
